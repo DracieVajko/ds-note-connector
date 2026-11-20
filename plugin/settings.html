@@ -1,0 +1,166 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>DS Note settings</title>
+<body style="margin:0;padding:12px;font:13px/1.5 system-ui,sans-serif;color:inherit">
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+    <label style="display:flex;flex-direction:column;gap:4px;flex:1 1 240px">
+      <span>Connection</span>
+      <select id="mode" style="padding:5px 6px;border-radius:6px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff);color:inherit">
+        <option value="auto">Auto — try my addresses, then QuickConnect</option>
+        <option value="direct">Direct — one address</option>
+        <option value="quickconnect">QuickConnect ID — let Synology find it</option>
+        <option value="portal">QuickConnect portal — force the portal</option>
+      </select>
+    </label>
+  </div>
+
+  <div id="auto-fields" style="display:none;margin-bottom:8px">
+    <label style="display:flex;flex-direction:column;gap:4px">
+      <span>Addresses to try, in order (one per line)</span>
+      <textarea id="hosts" rows="4" placeholder="192.168.1.10&#10;100.64.0.5&#10;nas.example.com"
+                style="padding:6px;border-radius:6px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff);color:inherit;font-family:ui-monospace,monospace;font-size:12px;resize:vertical"></textarea>
+    </label>
+    <p style="margin:6px 0 0;opacity:.7;font-size:12px">
+      Each is probed with the certificate settings below; the first that answers wins. If none do, the
+      QuickConnect ID is used.
+    </p>
+  </div>
+
+  <div id="direct-fields" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+    <label style="display:flex;flex-direction:column;gap:4px;flex:3 1 200px">
+      <span>NAS address</span>
+      <input id="host" placeholder="192.168.1.10 or nas.example.com" autocomplete="off"
+             style="padding:5px 6px;border-radius:6px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff);color:inherit">
+    </label>
+    <label style="display:flex;flex-direction:column;gap:4px;flex:1 1 90px">
+      <span>Port</span>
+      <input id="port" type="number" min="1" max="65535" placeholder="5001"
+             style="padding:5px 6px;border-radius:6px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff);color:inherit">
+    </label>
+  </div>
+
+  <div id="port-row" style="display:none;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+    <label style="display:flex;flex-direction:column;gap:4px;flex:1 1 90px;max-width:120px">
+      <span>Port</span>
+      <input id="port-auto" type="number" min="1" max="65535" placeholder="5001"
+             style="padding:5px 6px;border-radius:6px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff);color:inherit">
+    </label>
+  </div>
+
+  <div id="https-row" style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:8px">
+    <label style="display:flex;align-items:center;gap:6px"><input id="https" type="checkbox"> Use HTTPS</label>
+  </div>
+
+  <div id="quickconnect-fields" style="display:none;margin-bottom:8px">
+    <label style="display:flex;flex-direction:column;gap:4px">
+      <span>QuickConnect ID</span>
+      <input id="quickConnectId" placeholder="mynas" autocomplete="off"
+             style="padding:5px 6px;border-radius:6px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff);color:inherit">
+    </label>
+  </div>
+
+  <details id="cert-box" style="margin-bottom:10px;padding:8px 10px;border-radius:8px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff)">
+    <summary style="cursor:pointer;font-weight:600">Certificate and connection security</summary>
+
+    <div style="margin-top:10px;display:flex;flex-direction:column;gap:8px">
+      <label style="display:flex;flex-direction:column;gap:4px">
+        <span>How should the NAS certificate be checked?</span>
+        <select id="certMode" style="padding:5px 6px;border-radius:6px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff);color:inherit">
+          <option value="verify">Verify normally — the NAS has a real certificate</option>
+          <option value="name">Verify by certificate name — reached by IP or VPN address</option>
+          <option value="file">Verify against an exported certificate file</option>
+          <option value="pin">Pin the certificate fingerprint</option>
+          <option value="none">Accept any certificate — not recommended</option>
+        </select>
+      </label>
+
+      <label id="cert-name-field" style="display:none;flex-direction:column;gap:4px">
+        <span>Certificate name</span>
+        <input id="certificateName" placeholder="nas.example.com" autocomplete="off"
+               style="padding:5px 6px;border-radius:6px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff);color:inherit;font-size:12px">
+      </label>
+
+      <label id="cert-file-field" style="display:none;flex-direction:column;gap:4px">
+        <span>Certificate file exported from DSM</span>
+        <input id="certificate" placeholder="C:\Users\me\Downloads\nas.crt"
+               style="padding:5px 6px;border-radius:6px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff);color:inherit;font-size:12px">
+      </label>
+
+      <label id="cert-pin-field" style="display:none;flex-direction:column;gap:4px">
+        <span>Certificate fingerprint (SHA-256)</span>
+        <input id="certificateFingerprint" placeholder="AB:CD:EF:…"
+               style="padding:5px 6px;border-radius:6px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff);color:inherit;font-size:12px;font-family:ui-monospace,monospace">
+      </label>
+
+      <p id="cert-hint" style="margin:0;opacity:.72;font-size:12px"></p>
+      <p id="cert-warning" hidden
+         style="margin:0;padding:8px 10px;border-radius:6px;border:1px solid var(--warning,#b26a00);color:var(--warning,#b26a00);font-size:12px;line-height:1.45"></p>
+    </div>
+  </details>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+    <label style="display:flex;flex-direction:column;gap:4px;flex:1 1 200px">
+      <span>DSM account</span>
+      <input id="account" autocomplete="off" spellcheck="false"
+             style="padding:5px 6px;border-radius:6px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff);color:inherit">
+    </label>
+  </div>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:4px">
+    <label style="display:flex;flex-direction:column;gap:4px;flex:1 1 200px">
+      <span>DSM password</span>
+      <input id="password" type="password" autocomplete="new-password" placeholder="leave empty to keep the saved one"
+             style="padding:5px 6px;border-radius:6px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff);color:inherit">
+    </label>
+    <button id="save-password" type="button"
+            style="padding:6px 10px;border-radius:6px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff);color:inherit;cursor:pointer">Save password</button>
+  </div>
+  <p id="password-state" style="margin:0 0 10px;opacity:.75"></p>
+
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:4px">
+    <label style="display:flex;flex-direction:column;gap:4px;flex:1 1 200px">
+      <span>One-time code (only for a 2FA account's first sign-in)</span>
+      <input id="otpCode" autocomplete="one-time-code" inputmode="numeric" placeholder="leave empty unless DSM asks"
+             style="padding:5px 6px;border-radius:6px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff);color:inherit">
+    </label>
+  </div>
+  <p id="otp-state" style="margin:0 0 10px;opacity:.75">DSM accepts the code once, then remembers this device; the plugin clears it after a successful connection.</p>
+
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:10px">
+    <label style="display:flex;align-items:center;gap:6px"><input id="allowRaw" type="checkbox"> Expose the raw API tool (debugging)</label>
+  </div>
+
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">
+    <button id="save" type="button"
+            style="padding:6px 12px;border-radius:6px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff);color:inherit;cursor:pointer">Save</button>
+    <button id="test" type="button"
+            style="padding:6px 12px;border-radius:6px;border:1px solid var(--accent,#2f6f4e);background:var(--accent,#2f6f4e);color:var(--accent-fg,#fff);cursor:pointer">Save &amp; test</button>
+    <span id="status" style="opacity:.8"></span>
+  </div>
+
+  <div id="test-result" hidden
+       style="margin-bottom:10px;padding:8px 10px;border-radius:8px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff)">
+    <div id="test-headline" style="font-weight:600;margin-bottom:2px"></div>
+    <div id="test-detail" style="opacity:.75"></div>
+  </div>
+
+  <div style="margin:0;padding:10px 12px;border-radius:8px;border:1px solid var(--border-default,#e4e4e0);background:var(--surface,#fff)">
+    <div style="font-weight:600;margin-bottom:6px">Making this harder to attack</div>
+    <ul style="margin:0;padding-left:18px;line-height:1.6">
+      <li>A DSM user whose <b>only</b> permission is Note Station, with a password used nowhere else.</li>
+      <li>Two-factor on that account. The plugin never asks for the code again on a trusted device.</li>
+      <li>Verify the certificate — by name or by file — so the plugin trusts one certificate, not
+          whatever answers on that address.</li>
+      <li>QuickConnect relay traffic passes through Synology and cannot be certificate-verified. A LAN
+          or VPN route keeps the exchange between you and the NAS.</li>
+    </ul>
+    <p style="margin:8px 0 0;opacity:.75">
+      The password itself has to reach the local worker at login — DSM has no app-specific password or
+      OAuth for third-party clients. The worker keeps it in memory only, hands it to no one, and the
+      agent never sees it.
+    </p>
+  </div>
+
+  <script src="/brain-rpc.js"></script>
+  <script src="/settings.js"></script>
+</body>

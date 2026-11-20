@@ -1,0 +1,432 @@
+{
+  "schemaVersion": 3,
+  "minCindyVersion": "0.1.140",
+  "id": "ds-note",
+  "name": "DS Note",
+  "description": "Synology Note Station on your own NAS: search and read notes, write new ones from Markdown, manage notebooks, tags and tasks, and undo a bad edit from the version history. The DSM password stays in Cindy's vault.",
+  "icon": "assets/icon.png",
+  "whenToUse": "Use when the user wants to work with notes on their Synology NAS: search or read a note, save a new note or checklist, append to one, list notebooks or tags, manage Note Station tasks, or restore an earlier version. Words: note, poznámka, DS Note, Note Station, Synology, notebook, checklist.",
+  "version": "0.1.12",
+  "releaseNotes": "Follow-up to 0.1.11. Every tool now enforces its published schema, including numeric bounds, so a misspelled action or an out-of-range value is refused before a handler runs; an unknown action no longer falls through to a write. A refused redirect is reported as such, an upload is never re-posted after a transport failure, and only a connection that never opened is retried. The settings page gains a one-time code field for a 2FA account's first sign-in, cleared after a successful connection. The test double moved to tests/, the schema validator to core/schema.mjs, and the docs now match the tree.",
+  "entry": "main.js",
+  "command": "dsnote",
+  "readme": {
+    "en": "README.md"
+  },
+  "tools": [
+    {
+      "name": "dsnote_status",
+      "description": "Note Station connection status — Check the connection to the Synology NAS before doing anything else: which route was used (direct, relay or portal), whether the session and CSRF token are live, the DSM version, and how many notebooks, notes and tasks exist. Call this first when a previous call failed, and to confirm that credentials still work. The NAS address, account and serial number are deliberately not returned.",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "dsnote_notebooks",
+      "description": "List or create notebooks — List every notebook with its note count, or create/rename one. Call this before creating a note so the note lands in the right notebook instead of the default one.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "list",
+              "create",
+              "rename"
+            ],
+            "default": "list"
+          },
+          "id": {
+            "type": "string",
+            "description": "Notebook object_id (for rename)."
+          },
+          "title": {
+            "type": "string",
+            "description": "Notebook title (for create and rename)."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "dsnote_search",
+      "description": "Search notes — Full-text search across note titles and bodies. Returns ids, titles and plain-text snippets. This is the normal way to find a note: search first, then use the id with dsnote_get_note.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Words to look for."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200,
+            "default": 20
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "dsnote_list_notes",
+      "description": "List notes — List notes in one notebook, or the recycle bin. Does not return note bodies — use dsnote_get_note for that. Use recycle=true to see what is in the trash.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "notebookId": {
+            "type": "string",
+            "description": "Restrict to one notebook."
+          },
+          "recycle": {
+            "type": "boolean",
+            "default": false,
+            "description": "List the recycle bin instead of live notes."
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200,
+            "default": 30
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "default": 0
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "dsnote_get_note",
+      "description": "Read one note — Read a note as Markdown, with its notebook, tags, version and timestamps. The returned version is required if you intend to edit the note. Encrypted notes return no body — that is deliberate, not an error.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Use an object_id returned by dsnote_search or dsnote_list_notes — never a title."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "dsnote_create_note",
+      "description": "Create a note — Create a new note from Markdown in a specific notebook. Checkboxes (- [ ] / - [x]), headings, lists, tables, links and bold/italic are converted to the HTML subset Note Station preserves. Requires notebookId — resolve one with dsnote_notebooks first.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "markdown": {
+            "type": "string",
+            "description": "Note body in Markdown."
+          },
+          "notebookId": {
+            "type": "string",
+            "description": "Target notebook object_id."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Tag names (plain names, not ids)."
+          }
+        },
+        "required": [
+          "title",
+          "notebookId"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "dsnote_update_note",
+      "description": "Update a note — Replace a note body and/or change its title, tags or star. Reads the current version first, so an edit made on another device in the meantime is refused with a conflict instead of being overwritten. Only the fields you pass are changed.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Use an object_id returned by dsnote_search or dsnote_list_notes — never a title."
+          },
+          "title": {
+            "type": "string"
+          },
+          "markdown": {
+            "type": "string",
+            "description": "New body in Markdown; replaces the old body entirely."
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Replaces the tag list when given."
+          },
+          "notebookId": {
+            "type": "string",
+            "description": "Move the note into this notebook."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "dsnote_append_note",
+      "description": "Append to a note — Add Markdown to the end of an existing note without touching what is already there. This is the safe way to add a log entry or a new section.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Use an object_id returned by dsnote_search or dsnote_list_notes — never a title."
+          },
+          "markdown": {
+            "type": "string"
+          },
+          "heading": {
+            "type": "string",
+            "description": "Optional heading placed above the appended text."
+          }
+        },
+        "required": [
+          "id",
+          "markdown"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "dsnote_attach_image",
+      "description": "Attach an image to a note — Upload a local image file and append it to a note. The file must already exist on this computer; give its absolute path. The image is stored on the NAS and appears at the end of the note body. Only use this when the user asked to put a specific file into a note.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Use an object_id returned by dsnote_search or dsnote_list_notes — never a title."
+          },
+          "path": {
+            "type": "string",
+            "description": "Absolute path of the image on this computer."
+          },
+          "caption": {
+            "type": "string",
+            "description": "Optional caption stored with the attachment."
+          },
+          "width": {
+            "type": "integer",
+            "description": "Display width in pixels."
+          },
+          "height": {
+            "type": "integer",
+            "description": "Display height in pixels."
+          }
+        },
+        "required": [
+          "id",
+          "path"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "dsnote_trash_note",
+      "description": "Move a note to the recycle bin — Soft delete. The note goes to the recycle bin and can be restored with dsnote_restore_note. Nothing is destroyed permanently by this tool, and it does not empty the bin.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Use an object_id returned by dsnote_search or dsnote_list_notes — never a title."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "dsnote_restore_note",
+      "description": "Restore a note from the recycle bin — Put a trashed note back into the notebook it came from.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Use an object_id returned by dsnote_search or dsnote_list_notes — never a title."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "dsnote_tags",
+      "description": "List tags — List every tag with the notes that carry it. Note Station stores tags asymmetrically: they read as \"Name@uid\" but are written as plain names, and a note list never includes them.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "noteId": {
+            "type": "string",
+            "description": "Return only the tags carried by this note."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "dsnote_todos",
+      "description": "Note Station tasks — Read and change the task list that lives next to the notes. Actions: list, create, update, complete, delete. Tasks are separate objects, not checkboxes inside a note — use dsnote_append_note for those.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "list",
+              "create",
+              "update",
+              "complete",
+              "delete"
+            ],
+            "default": "list"
+          },
+          "id": {
+            "type": "string",
+            "description": "Task object_id (update/complete/delete)."
+          },
+          "title": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "dueDate": {
+            "type": "string",
+            "description": "ISO date or datetime for the due date."
+          },
+          "done": {
+            "type": "boolean"
+          },
+          "priority": {
+            "type": "integer",
+            "description": "Note Station priority value; only 300 is known to be meaningful."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "dsnote_versions",
+      "description": "Note version history — List a note's revisions, or restore one in place. This is the undo after a bad edit: restoring a revision overwrites the current body with that older one, so read the note first if you are unsure.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Use an object_id returned by dsnote_search or dsnote_list_notes — never a title."
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "list",
+              "restore"
+            ],
+            "default": "list"
+          },
+          "version": {
+            "type": "string",
+            "description": "The `version` value from a previous list call (for restore)."
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "dsnote_raw",
+      "description": "Raw Note Station API call (debug) — Call an undocumented SYNO.NoteStation.* method directly. Only available when explicitly enabled. Parameters are sent as JSON literals. Use this to investigate, not to do normal work. Destructive calls are refused here: permanent note deletion (Note.delete with recycle=false) and notebook deletion, because the second removes the notes inside it. Both remain possible only by hand in DSM, where the user sees what is about to disappear.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "api": {
+            "type": "string",
+            "description": "e.g. SYNO.NoteStation.Smart"
+          },
+          "method": {
+            "type": "string",
+            "description": "e.g. list"
+          },
+          "version": {
+            "type": "integer",
+            "description": "Override the pinned version."
+          },
+          "params": {
+            "type": "object",
+            "description": "Parameters, encoded as JSON literals."
+          }
+        },
+        "required": [
+          "api",
+          "method"
+        ],
+        "additionalProperties": false
+      }
+    }
+  ],
+  "node": {
+    "entry": "node/worker.cjs",
+    "protocol": "json-rpc-stdio",
+    "lifecycle": "on-demand",
+    "idleTimeoutSeconds": 300,
+    "secretBindings": [
+      {
+        "key": "dsm_password",
+        "label": "DSM password",
+        "hint": "Password of the DSM user that only has Note Station access. Stored by Cindy and handed only to this plugin's local worker.",
+        "methods": [
+          "note/call"
+        ]
+      }
+    ]
+  },
+  "panel": {
+    "title": "DS Note",
+    "html": "panel.html",
+    "position": "right",
+    "minWidth": 280,
+    "defaultFraction": 0.28
+  },
+  "settingsHtml": "settings.html",
+  "skill": {
+    "items": [
+      {
+        "dir": "skills/ds-note",
+        "name": "ds-note",
+        "description": "Work with Synology Note Station notes, notebooks, tags and tasks through the DS Note plugin: search before reading, read before editing, keep delete as trash, and use version history as the undo."
+      }
+    ]
+  }
+}

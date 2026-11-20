@@ -1,0 +1,16 @@
+{
+  "name": "ds-note-connector",
+  "version": "0.1.12",
+  "private": true,
+  "type": "module",
+  "description": "Synology Note Station bridge for AI agents \u2014 one core, many harnesses (Cindy plugin, MCP, CLI).",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "test": "node --test tests/",
+    "fake-nas": "node tools/fake-nas.mjs",
+    "probe": "node tools/probe.mjs"
+  },
+  "license": "MIT"
+}

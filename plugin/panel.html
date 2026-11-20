@@ -1,0 +1,54 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>DS Note</title>
+<link rel="stylesheet" href="/panel.css">
+<body>
+  <header class="bar">
+    <span class="dot" id="dot" data-state="idle" aria-hidden="true"></span>
+    <span class="status" id="status">Connecting…</span>
+    <button class="ghost" id="refresh" type="button" title="Refresh">Refresh</button>
+  </header>
+
+  <p id="certificate" hidden
+     style="margin:0;font-size:10px;opacity:.55;font-family:ui-monospace,monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></p>
+
+  <div class="filters">
+    <input id="search" type="search" placeholder="Search notes…" autocomplete="off" spellcheck="false">
+    <select id="notebook" title="Notebook">
+      <option value="">All notebooks</option>
+    </select>
+  </div>
+
+  <div class="actions">
+    <button id="new" type="button" class="primary">New note</button>
+    <span class="count" id="count"></span>
+  </div>
+
+  <section id="composer" hidden>
+    <input id="composer-title" type="text" placeholder="Title" autocomplete="off">
+    <select id="composer-notebook" title="Notebook"></select>
+    <textarea id="composer-body" rows="8" placeholder="Body in Markdown.&#10;&#10;# Heading&#10;- [ ] task&#10;- [x] done"></textarea>
+    <div class="composer-actions">
+      <button id="composer-save" type="button" class="primary">Save note</button>
+      <button id="composer-cancel" type="button" class="ghost">Cancel</button>
+      <span class="hint" id="composer-status"></span>
+    </div>
+  </section>
+
+  <ul id="list" class="list" aria-label="Notes"></ul>
+
+  <article id="detail" class="detail" hidden>
+    <div class="detail-head">
+      <button id="back" type="button" class="ghost">← Back</button>
+      <span class="detail-meta" id="detail-meta"></span>
+    </div>
+    <h1 id="detail-title"></h1>
+    <div id="detail-tags" class="tags"></div>
+    <div id="detail-body" class="body"></div>
+  </article>
+
+  <p id="empty" class="empty" hidden></p>
+
+  <script src="/brain-rpc.js"></script>
+  <script src="/panel.js"></script>
+</body>
